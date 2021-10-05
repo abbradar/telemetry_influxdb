@@ -1,17 +1,18 @@
 defmodule TelemetryInfluxDB.BatchReporter do
   @moduledoc """
   This module handles batching events to be reported to Influx. It will call the provided
-  report function with any events that have been enqueued since the last report. If a batch_size
-  is not provided, the batch size will default to 1, which will send all events separately.
+  report function with any events that have been enqueued since the last report. If a batch_time
+  is not provided, delay between batches will default to 0, which will send all
+  enqueued events immediately.
   """
 
   use GenServer
 
   defmodule State do
-    defstruct [:report_fn, :batch_size, report_scheduled?: false, unreported_events: []]
+    defstruct [:report_fn, :batch_time, report_scheduled?: false, unreported_events: []]
 
     def enqueue_event(state, event) do
-      %{state | unreported_events: state.unreported_events ++ [event]}
+      %{state | unreported_events: [event | state.unreported_events]}
     end
 
     def set_unreported_events(state, remaining_events) do
@@ -29,9 +30,12 @@ defmodule TelemetryInfluxDB.BatchReporter do
 
   def start_link(opts \\ []) do
     {report_fn, opts} = Keyword.pop(opts, :report_fn)
-    {batch_size, opts} = Keyword.pop(opts, :batch_size, 1)
+    {batch_time, opts} = Keyword.pop(opts, :batch_time, 0)
 
-    state = %State{report_fn: report_fn, batch_size: batch_size}
+    state = %State{
+      report_fn: report_fn,
+      batch_time: batch_time,
+    }
 
     GenServer.start_link(__MODULE__, state, opts)
   end
@@ -54,15 +58,12 @@ defmodule TelemetryInfluxDB.BatchReporter do
   end
 
   def handle_info(:report_events, state) do
-    {events_to_report, remaining_events} = Enum.split(state.unreported_events, state.batch_size)
-
-    state.report_fn.(events_to_report)
+    state.report_fn.(Enum.reverse(state.unreported_events))
 
     updated_state =
       state
-      |> State.set_unreported_events(remaining_events)
+      |> State.set_unreported_events([])
       |> State.reset_report_scheduled()
-      |> maybe_report_events()
 
     {:noreply, updated_state}
   end
@@ -76,7 +77,11 @@ defmodule TelemetryInfluxDB.BatchReporter do
   defp maybe_report_events(%{unreported_events: []} = state), do: state
 
   defp maybe_report_events(state) do
-    send(self(), :report_events)
+    if state.batch_time > 0 do
+      Process.send_after(self(), :report_events, state.batch_time)
+    else
+      send(self(), :report_events)
+    end
     State.set_report_scheduled(state)
   end
 end
