@@ -41,7 +41,7 @@ defmodule TelemetryInfluxDB.MixProject do
       {:telemetry, "~> 0.4.0"},
       {:jason, "~> 1.0"},
       {:httpoison, "~> 1.5"},
-      {:eventually, git: "https://github.com/distributed-owls/eventually", only: :test},
+      {:liveness, "~> 1.0.0", only: :test},
       {:meck, git: "https://github.com/eproxus/meck", only: :test},
       {:dialyxir, "~> 0.5", only: :test, runtime: false},
       {:worker_pool, "~> 4.0.0"},
