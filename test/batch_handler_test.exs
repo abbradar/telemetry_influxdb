@@ -17,18 +17,20 @@ defmodule TelemetryInfluxDB.BatchHandlerTest do
 
     config = %{
       token: "testing123",
-      publisher: MockPublish
+      publisher: MockPublish,
+      tags: %{},
+      metadata_tag_keys: []
     }
 
     batch = [
-      {"event1", config},
-      {"event2", config},
-      {"event3", config}
+      {[:event1], 1, %{}, %{}, config},
+      {[:event2], 2, %{}, %{}, config},
+      {[:event3], 3, %{}, %{}, config}
     ]
 
     BatchHandler.handle_batch(batch)
 
-    expected_message = "event1\nevent2\nevent3"
+    expected_message = "event1  1\nevent2  2\nevent3  3"
     assert_receive {:published, ^expected_message, ^config}
   end
 end

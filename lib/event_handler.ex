@@ -5,7 +5,6 @@ defmodule TelemetryInfluxDB.EventHandler do
 
   alias TelemetryInfluxDB, as: InfluxDB
   alias TelemetryInfluxDB.BatchReporter
-  alias TelemetryInfluxDB.Formatter
 
   @spec start_link(InfluxDB.config()) :: GenServer.on_start()
   def start_link(config) do
@@ -53,20 +52,26 @@ defmodule TelemetryInfluxDB.EventHandler do
           InfluxDB.config()
         ) :: :ok
   def handle_event(event, measurements, metadata, config) do
-    event_tags = Map.get(metadata, :tags, %{})
-    event_timestamp = Map.get(metadata, "_timestamp")
-    event_metadatas = Map.take(metadata, config.metadata_tag_keys)
+    # We are being careful here not to copy anything in most often cases.
+    {raw_timestamp, metadata} =
+      case metadata do
+        %{timestamp: ts} ->
+          {ts, metadata}
 
-    tags =
-      Map.merge(config.tags, event_tags)
-      |> Map.merge(event_metadatas)
+        _ ->
+          ts = System.system_time()
 
-    formatted_event = Formatter.format(event, measurements, tags, event_timestamp)
+          metadata =
+            case metadata do
+              %{timestamp_unit: _unit} -> %{metadata | timestamp_unit: :native}
+              _ -> metadata
+            end
+
+          {ts, metadata}
+      end
 
     BatchReporter.get_name(config)
-    |> BatchReporter.enqueue_event({formatted_event, config})
-
-    :ok
+    |> BatchReporter.enqueue_event({event, raw_timestamp, measurements, metadata, config})
   end
 
   @spec handler_id(InfluxDB.event_name(), binary()) :: InfluxDB.handler_id()
