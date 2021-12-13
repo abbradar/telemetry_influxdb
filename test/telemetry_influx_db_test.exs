@@ -2,7 +2,7 @@ defmodule TelemetryInfluxDBTest do
   use ExUnit.Case, async: false
 
   import ExUnit.CaptureLog
-  import Eventually
+  import Liveness
 
   alias TelemetryInfluxDB.Test.FluxParser
   alias TelemetryInfluxDB.Test.InfluxSimpleClient
@@ -402,9 +402,7 @@ defmodule TelemetryInfluxDBTest do
       @tag :capture_log
       @tag version: version
       @tag protocol: protocol
-      test "events are not reported when reporter receives an exit signal for #{version} #{
-             protocol
-           } API",
+      test "events are not reported when reporter receives an exit signal for #{version} #{protocol} API",
            context do
         ## given
         event_first = given_event_spec([:first, :event])
