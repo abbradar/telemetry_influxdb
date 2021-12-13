@@ -27,7 +27,7 @@ defmodule TelemetryInfluxDB.BatchReporterTest do
       send(test_pid, {:test_report, events})
     end
 
-    reporter = start_reporter(report_fn: report_fn, batch_time: 2)
+    reporter = start_reporter(report_fn: report_fn, batch_time: 5)
 
     [event1, event2, event3, event4, event5, event6] = random_events(6)
 
@@ -35,7 +35,7 @@ defmodule TelemetryInfluxDB.BatchReporterTest do
     Process.sleep(1)
     BatchReporter.enqueue_event(reporter, event2)
     BatchReporter.enqueue_event(reporter, event3)
-    Process.sleep(2)
+    Process.sleep(5)
     BatchReporter.enqueue_event(reporter, event4)
     BatchReporter.enqueue_event(reporter, event5)
     BatchReporter.enqueue_event(reporter, event6)
@@ -56,10 +56,10 @@ defmodule TelemetryInfluxDB.BatchReporterTest do
     [event1, event2, event3, event4, event5, event6] = random_events(6)
 
     BatchReporter.enqueue_event(reporter, event1)
-    Process.sleep(1)
+    Process.sleep(5)
     BatchReporter.enqueue_event(reporter, event2)
     BatchReporter.enqueue_event(reporter, event3)
-    Process.sleep(1)
+    Process.sleep(5)
     BatchReporter.enqueue_event(reporter, event4)
     BatchReporter.enqueue_event(reporter, event5)
     BatchReporter.enqueue_event(reporter, event6)
