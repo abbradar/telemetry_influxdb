@@ -38,7 +38,7 @@ defmodule TelemetryInfluxDB.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:telemetry, "~> 0.4.0"},
+      {:telemetry, "~> 1.1.0"},
       {:jason, "~> 1.0"},
       {:httpoison, "~> 1.5"},
       {:liveness, "~> 1.0.0", only: :test},
