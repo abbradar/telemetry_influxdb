@@ -16,6 +16,7 @@ defmodule TelemetryInfluxDB.HTTP.Publisher do
     config
     |> Map.update!(:port, &:erlang.integer_to_binary/1)
     |> Map.put(:pool_name, pool_name)
+    |> Map.put(:backend_options, Map.take(config, [:ssl]) |> Enum.into([]))
   end
 
   @impl InfluxDB.Publisher
@@ -23,13 +24,14 @@ defmodule TelemetryInfluxDB.HTTP.Publisher do
     url = build_url(config)
     body = payload
     headers = Map.merge(authentication_header(config), binary_data_header())
+    options = config.backend_options
 
-    :wpool.cast(config.pool_name, {__MODULE__, :send_event, [url, body, headers]})
+    :wpool.cast(config.pool_name, {__MODULE__, :send_event, [url, body, headers, options]})
   end
 
-  @spec send_event(binary, any, any) :: :ok
-  def send_event(url, body, headers) do
-    process_response(HTTPoison.post(url, body, headers))
+  @spec send_event(binary, any, any, any) :: :ok
+  def send_event(url, body, headers, options) do
+    process_response(HTTPoison.post(url, body, headers, options))
   end
 
   def handle_info({:EXIT, _pid, reason}, state) do
